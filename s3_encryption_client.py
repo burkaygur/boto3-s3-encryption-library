@@ -24,9 +24,9 @@ class S3EncryptionClient():
         iv = os.urandom(self.nonce_size)
 
         aesgcm = AESGCM(data_key)
-        cipher_text = aesgcm.encrypt(iv, body, None)
+        cipher_text = aesgcm.encrypt(iv, body.encode(), None)
 
-        md5 = base64.b64encode(hashlib.md5(body).digest())
+        md5 = base64.b64encode(hashlib.md5(body.encode()).digest())
         content_length = str(len(body))
  
         # delete keys and data?
@@ -34,13 +34,13 @@ class S3EncryptionClient():
         cipher_data = {}
         cipher_data['x-amz-wrap-alg']= 'kms'
         cipher_data['x-amz-matdesc'] = json.dumps(encryption_context)
-        cipher_data['x-amz-key-v2'] = base64.b64encode(encrypted_data_key)
-        cipher_data['x-amz-iv'] = base64.b64encode(iv)
+        cipher_data['x-amz-key-v2'] = base64.b64encode(encrypted_data_key).decode()
+        cipher_data['x-amz-iv'] = base64.b64encode(iv).decode()
         cipher_data['x-amz-cek-alg'] = 'AES/GCM/NoPadding'
         cipher_data['x-amz-tag-len'] = self.tag_length
-        cipher_data['x-amz-unencrypted-content-md5'] = md5
+        cipher_data['x-amz-unencrypted-content-md5'] = md5.decode()
         cipher_data['x-amz-unencrypted-content-length'] = content_length
-        
+
         return self.s3_client.Object(bucket, key).put(Body=cipher_text, Metadata=cipher_data)
     
     def get_object(self, bucket, key): 
